@@ -13,6 +13,22 @@ import (
 	"golang.org/x/net/html"
 )
 
+// Store the number of written bytes to the disk.
+// Implements the io.Writer interface.
+type fileWriteCounter struct {
+	TotalSize uint64
+	Written   uint64
+}
+
+func (fwc *fileWriteCounter) Write(data []byte) (int, error) {
+	// Get the length of the current chunk.
+	size := len(data)
+	// Increment the written bytes.
+	fwc.Written += uint64(size)
+
+	return size, nil
+}
+
 // Download the HTML.
 // If no error happened returns the body of the response.
 func getHTML(URL string) (string, error) {

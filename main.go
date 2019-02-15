@@ -98,7 +98,13 @@ func getTrackName(URL string) string {
 func downloadFile(URL string) (err error) {
 	// Get the data.
 	resp, err := http.Get(URL)
+	// Check error
 	if err != nil {
+		return
+	}
+	// and status code.
+	if resp.StatusCode != 200 {
+		err = errors.New("bad status code: " + string(resp.StatusCode))
 		return
 	}
 	defer resp.Body.Close()

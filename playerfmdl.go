@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 
-	"golang.org/x/crypto/ssh/terminal"
+	"github.com/schollz/progressbar"
 
 	"golang.org/x/net/html"
 )
@@ -164,31 +164,6 @@ func downloadFile(URL string, fileName string, fileSizeChan chan<- uint64, writt
 	close(writtenBytesChan)
 }
 
-// Print the output to the standard output.
-func printStatus(fileSize uint64, writtenBytes uint64) {
-	// Function the convert the bytes to megabyte.
-	toKiloBytess := func(bytes uint64) uint64 {
-		return bytes / 1024
-	}
-
-	// Get the size of the terminal.
-	width, _, _ := terminal.GetSize(0)
-
-	// Get the status percentage.
-	percentage := int(writtenBytes * 100 / fileSize)
-	// Get the number of completed marks in the terminal UI.
-	markCount := percentage / 5
-
-	// Go back to the start of the current line.
-	fmt.Printf("\r")
-
-	// Create the line.
-	line := fmt.Sprintf("[%s%s] %d/%d KB", strings.Repeat("=", markCount), strings.Repeat(".", 20-markCount), toKiloBytess(writtenBytes), toKiloBytess(fileSize))
-
-	// Print it and fill the remaining space with spaces.
-	fmt.Printf("%s%s", line, strings.Repeat(" ", width-len(line)))
-}
-
 func main() {
 	var URL string
 	fmt.Print("Enter base player.fm URL: ")
@@ -213,7 +188,11 @@ func main() {
 		// Start the file download.
 		go downloadFile(link, fileName, fileSizeChan, writtenBytes)
 
+		// Print some information.
 		fmt.Printf("[%d/%d] %s (%s)\n", i+1, len(links), fileName, link)
+
+		// Create the progressbar.
+		bar := progressbar.New(100)
 
 		// Get the size of the file.
 		fileSize := <-fileSizeChan
@@ -225,7 +204,11 @@ func main() {
 				break
 			}
 
-			printStatus(fileSize, writtenBytes)
+			// Calculate the percentage.
+			perc := writtenBytes * 100 / fileSize
+
+			// Update the progressbar.
+			bar.Set(int(perc))
 		}
 		// New line after complete.
 		fmt.Println()

@@ -145,9 +145,9 @@ func downloadFile(URL string, fileName string, fileSizeChan chan<- uint64, writt
 		return
 	}
 
-	// Create the file.
+	// Create the file with a temporary name.
 	filePath := "Downloads/" + fileName
-	file, err := os.Create(filePath)
+	file, err := os.Create(filePath + ".part")
 	if err != nil {
 		return
 	}
@@ -157,6 +157,9 @@ func downloadFile(URL string, fileName string, fileSizeChan chan<- uint64, writt
 	counter := fileWriteCounter{Channel: writtenBytesChan}
 	// start to copy the file.
 	_, err = io.Copy(file, io.TeeReader(resp.Body, &counter))
+
+	// Rename to the original name if the file writing completed successfully.
+	os.Rename(filePath+".part", filePath)
 
 	close(writtenBytesChan)
 }

@@ -151,15 +151,18 @@ func downloadFile(URL string, fileName string, fileSizeChan chan<- uint64, writt
 	if err != nil {
 		return
 	}
-	defer file.Close()
 
 	// Create the counter and
 	counter := fileWriteCounter{Channel: writtenBytesChan}
 	// start to copy the file.
 	_, err = io.Copy(file, io.TeeReader(resp.Body, &counter))
 
-	// Rename to the original name if the file writing completed successfully.
-	os.Rename(filePath+".part", filePath)
+	// Close the file to release and
+	file.Close()
+	// rename it to the original name.
+	if err = os.Rename(filePath+".part", filePath); err != nil {
+		fmt.Println(err)
+	}
 
 	close(writtenBytesChan)
 }

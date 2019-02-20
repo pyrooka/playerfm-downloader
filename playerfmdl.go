@@ -115,8 +115,22 @@ func getFileName(URL string) string {
 	return splittedBaseURL[len(splittedBaseURL)-1]
 }
 
+// Check if the file is exists and the same as we would like to download.
+func isFileExist(path string, size int) bool {
+	// If the file exists and the size is the same return true.
+	if file, err := os.Stat(path); err == nil {
+		if file.Size() == int64(size) {
+			return true
+		}
+	}
+
+	return false
+}
+
 // Download the file from the URL.
 func downloadFile(URL string, fileName string, fileSizeChan chan<- uint64, writtenBytesChan chan<- uint64) {
+	defer close(writtenBytesChan)
+
 	// Get the data.
 	resp, err := http.Get(URL)
 	// Check error
@@ -145,8 +159,13 @@ func downloadFile(URL string, fileName string, fileSizeChan chan<- uint64, writt
 		return
 	}
 
-	// Create the file with a temporary name.
 	filePath := "Downloads/" + fileName
+	// Check if the file is already exists (downloaded).
+	if isFileExist(filePath, fileSize) {
+		writtenBytesChan <- uint64(fileSize)
+		return
+	}
+	// Create the file with a temporary name.
 	file, err := os.Create(filePath + ".part")
 	if err != nil {
 		return
@@ -163,8 +182,6 @@ func downloadFile(URL string, fileName string, fileSizeChan chan<- uint64, writt
 	if err = os.Rename(filePath+".part", filePath); err != nil {
 		fmt.Println(err)
 	}
-
-	close(writtenBytesChan)
 }
 
 func main() {
